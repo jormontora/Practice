@@ -6,3 +6,27 @@
 2025-06-03 01:33:22,149 INFO Update id=889351643 is handled. Duration 55 ms by bot id=7857285822
 2025-06-03 01:33:27,159 INFO /logs from 752113604
 2025-06-03 01:33:27,242 INFO Update id=889351644 is handled. Duration 82 ms by bot id=7857285822
+2025-06-03 01:33:38,301 INFO /testmsg from 752113604
+2025-06-03 01:33:38,356 INFO Update id=889351645 is handled. Duration 55 ms by bot id=7857285822
+2025-06-03 01:33:49,696 INFO /users from 752113604
+2025-06-03 01:33:49,751 INFO Update id=889351646 is handled. Duration 55 ms by bot id=7857285822
+2025-06-03 01:34:02,521 INFO /testmsg from 752113604
+2025-06-03 01:34:02,644 INFO Update id=889351647 is handled. Duration 123 ms by bot id=7857285822
+2025-06-03 01:34:54,878 INFO /testmsg from 752113604
+2025-06-03 01:34:54,997 INFO Update id=889351648 is handled. Duration 119 ms by bot id=7857285822
+2025-06-03 01:35:21,023 INFO /testmsg from 752113604
+2025-06-03 01:35:21,141 INFO Update id=889351649 is handled. Duration 118 ms by bot id=7857285822
+2025-06-03 01:36:54,751 INFO /testmsg from 752113604
+2025-06-03 01:36:54,806 INFO Update id=889351650 is handled. Duration 55 ms by bot id=7857285822
+2025-06-03 01:37:05,439 INFO /testmsg from 752113604
+2025-06-03 01:37:05,554 INFO Update id=889351651 is handled. Duration 115 ms by bot id=7857285822
+2025-06-03 01:37:46,631 INFO /helpadmin from 752113604
+2025-06-03 01:37:46,691 INFO Update id=889351652 is handled. Duration 60 ms by bot id=7857285822
+2025-06-03 01:37:50,521 INFO /ping from 752113604
+2025-06-03 01:37:50,576 INFO Update id=889351653 is handled. Duration 55 ms by bot id=7857285822
+2025-06-03 01:38:25,529 INFO /stats from 752113604
+2025-06-03 01:38:25,596 INFO Update id=889351654 is handled. Duration 67 ms by bot id=7857285822
+2025-06-03 01:43:12,423 INFO /ping from 752113604
+2025-06-03 01:43:12,480 INFO Update id=889351655 is handled. Duration 57 ms by bot id=7857285822
+2025-06-03 01:43:16,238 INFO /users from 752113604
+2025-06-03 01:43:16,306 INFO Update id=889351656 is handled. Duration 68 ms by bot id=7857285822
