@@ -1,0 +1,47 @@
+{
+    "clientId": "5t1BdWUSgw",
+    "name": "Пеньков Руслан",
+    "webHookUrl": "",
+    "permissions": "psfj",
+    "accounts": [
+        {
+            "id": "991tscG2vmyPLVNVCpo07A",
+            "sendId": "3Rhidopgbc",
+            "currencyCode": 840,
+            "cashbackType": "UAH",
+            "balance": 24,
+            "creditLimit": 0,
+            "maskedPan": [
+                "444111******5848"
+            ],
+            "type": "black",
+            "iban": "UA453220010000026205331417935"
+        },
+        {
+            "id": "PO3bTvGSomNHvYH33e4GUQ",
+            "sendId": "3USdoKNmiC",
+            "currencyCode": 978,
+            "cashbackType": "UAH",
+            "balance": 0,
+            "creditLimit": 0,
+            "maskedPan": [
+                "444111******8671"
+            ],
+            "type": "black",
+            "iban": "UA843220010000026201338239864"
+        },
+        {
+            "id": "bD6PtQ1syympdui9YwfsGw",
+            "sendId": "5t1BdWUSgw",
+            "currencyCode": 980,
+            "cashbackType": "UAH",
+            "balance": 302782,
+            "creditLimit": 0,
+            "maskedPan": [
+                "444111******4391"
+            ],
+            "type": "black",
+            "iban": "UA333220010000026205329273772"
+        }
+    ]
+}
