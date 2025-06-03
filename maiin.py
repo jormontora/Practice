@@ -6,6 +6,7 @@ from aiogram.filters import Command
 from aiogram.types import Message
 import logging
 from datetime import datetime
+import time
 
 # --- Константи та налаштування ---
 api_token = 'uMJqLYKFvfdmhpPmouRsvolTID66hl1obk7XFEU_Qza8'
@@ -97,20 +98,20 @@ def format_accounts(accounts_info):
         if old_b != new_b:
             lines.append(f"Карта *{last4} ({currency}): {old_b:.2f} → {new_b:.2f} (изменение: {diff:+.2f} {currency})")
         else:
-            lines.append(f"Карта *{last4} ({currency}): {new_b:.2f} (без изменений)")
+            lines.append(f"Карта *{last4} ({currency}): {new_b:.2f} (без змін)")
     return "\n".join(lines)
 
 def format_rates(usd_uah, eur_uah):
     # Формування тексту по курсам валют
     lines = []
     if usd_uah:
-        lines.append(f"\nUSD/UAH: цена за покупку: {usd_uah.get('rateBuy', 'N/A')} | цена на продажу: {usd_uah.get('rateSell', 'N/A')}")
+        lines.append(f"\nUSD/UAH: ціна за покупку: {usd_uah.get('rateBuy', 'N/A')} | ціна на продажу: {usd_uah.get('rateSell', 'N/A')}")
     else:
-        lines.append("\nUSD/UAH: нет данных")
+        lines.append("\nUSD/UAH: немає даних")
     if eur_uah:
-        lines.append(f"EUR/UAH: цена за покупку: {eur_uah.get('rateBuy', 'N/A')} | цена на продажу: {eur_uah.get('rateSell', 'N/A')}")
+        lines.append(f"EUR/UAH: ціна за покупку: {eur_uah.get('rateBuy', 'N/A')} | ціна на продажу: {eur_uah.get('rateSell', 'N/A')}")
     else:
-        lines.append("EUR/UAH: нет данных")
+        lines.append("EUR/UAH: немає даних")
     return "\n".join(lines)
 
 # --- Ініціалізація бота ---
@@ -413,7 +414,7 @@ async def cmd_testmsg(message: Message):
 async def cmd_ping(message: Message):
     # Обробка команди /ping (перевірка зв'язку)
     log_event(f"/ping from {message.chat.id}")
-    await message.answer("Я на зв'язку!")
+    await message.answer("Я на зв'язкау!")
 
 @dp.message(Command("helpadmin"))
 async def cmd_helpadmin(message: Message):
@@ -435,6 +436,68 @@ async def cmd_helpadmin(message: Message):
         "/helpadmin — список усіх адмінських команд з коротким описом"
     )
     await message.answer(help_text, parse_mode="HTML")
+
+@dp.message(Command("lasttransactions"))
+async def cmd_lasttransactions(message: Message):
+    # Команда для отримання обороту та балансу за останні 30 днів (тільки для адміна)
+    if message.from_user.id != OWNER_ID:
+        await message.answer("У вас немає доступу до цієї команди.")
+        return
+
+    await message.answer("Збираю дані, зачекайте...")
+
+    try:
+        # Отримуємо список рахунків
+        client_info = get("https://api.monobank.ua/personal/client-info", headers={'X-Token': api_token}).json()
+        accounts = client_info.get("accounts", [])
+        now = int(time.time())
+        month_ago = now - 30 * 24 * 60 * 60
+
+        report_lines = []
+        for acc in accounts:
+            acc_id = acc.get("id")
+            currency = currency_map.get(acc.get("currencyCode"), str(acc.get("currencyCode")))
+            acc_name = f"*{acc.get('maskedPan', ['----'])[0][-4:]}" if acc.get('maskedPan') else acc_id
+
+            all_transactions = []
+            to_time = now
+            while True:
+                url = f"https://api.monobank.ua/personal/statement/{acc_id}/{month_ago}/{to_time}"
+                resp = get(url, headers={'X-Token': api_token})
+                if resp.status_code != 200:
+                    break
+                txns = resp.json()
+                if not isinstance(txns, list):
+                    break
+                all_transactions.extend(txns)
+                if len(txns) < 500:
+                    break
+                # Пагінація: зсуваємо to_time до часу останньої транзакції
+                to_time = min(txn.get("time", to_time) for txn in txns)
+                # Захист від зациклення
+                if to_time <= month_ago:
+                    break
+                await asyncio.sleep(1.1)  # дотримання ліміту API
+
+            if not all_transactions:
+                report_lines.append(f"Карта {acc_name} ({currency}): немає транзакцій за 30 днів.")
+                continue
+
+            # Оборот: сума абсолютних значень всіх сум
+            turnover = sum(abs(txn.get("amount", 0)) for txn in all_transactions) / 100
+            # Чистий результат: сума всіх сум (плюс/мінус)
+            net = sum(txn.get("amount", 0) for txn in all_transactions) / 100
+
+            sign = "плюс" if net > 0 else ("мінус" if net < 0 else "0")
+            report_lines.append(
+                f"Карта {acc_name} ({currency}):\n"
+                f"  Оборот за 30 днів: {turnover:.2f} {currency}\n"
+                f"  Баланс за місяць: {net:+.2f} {currency} ({sign})"
+            )
+
+        await message.answer("\n\n".join(report_lines))
+    except Exception as e:
+        await message.answer("Не вдалося отримати виписку. Можливо, ліміт API або помилка даних.")
 
 # --- Глобальний обробник помилок ---
 from aiogram import F
@@ -464,7 +527,7 @@ async def periodic_update():
         curr_rates = rates_snapshot(usd_uah, eur_uah)
 
         if curr_balances != prev_balances or curr_rates != prev_rates:
-            msg = "--- Обновление данных ---\n"
+            msg = "--- Обновлення даних ---\n"
             msg += format_accounts(accounts_info)
             msg += "\n"
             msg += format_rates(usd_uah, eur_uah)
