@@ -7,6 +7,7 @@ from aiogram.types import Message
 import logging
 from datetime import datetime
 
+# --- Константи та налаштування ---
 api_token = 'uMJqLYKFvfdmhpPmouRsvolTID66hl1obk7XFEU_Qza8'
 filename = 'dataRUSLAN.json'
 backup_filename = 'dataRUSLAN_prev.json'
@@ -21,9 +22,9 @@ currency_map = {
     978: 'EUR'
 }
 
-OWNER_ID = 752113604  # <-- замените на свой Telegram user_id
+OWNER_ID = 752113604  # <-- ваш Telegram user_id
 
-# --- Logging setup ---
+# --- Налаштування логування ---
 LOG_FILENAME = 'bot.log'
 logging.basicConfig(
     filename=LOG_FILENAME,
@@ -33,20 +34,18 @@ logging.basicConfig(
 )
 
 def log_event(msg):
+    # Запис події у лог-файл
     logging.info(msg)
 
 def get_currency_rates():
+    # Отримання курсів валют з API або з бекапу
     currency_data = get("https://api.monobank.ua/bank/currency").json()
-    # Исправление: если currency_data - это dict, а не список, берем список по ключу
     if isinstance(currency_data, dict):
-        # Иногда API возвращает ошибку или сообщение, а не список валют
-        # В этом случае пробуем взять из бэкапа
         try:
             with open(currency_filename, 'r', encoding='utf-8') as f:
                 currency_data = json.load(f)
         except Exception:
             return [], None, None
-        # Если после этого currency_data всё ещё не список, возвращаем пусто
         if not isinstance(currency_data, list):
             return [], None, None
     with open(currency_filename, 'w', encoding='utf-8') as f:
@@ -56,7 +55,7 @@ def get_currency_rates():
     return currency_data, usd_uah, eur_uah
 
 def get_accounts_info(new_data, old_data):
-    # Если не удалось получить новые данные, используем данные из бэкапа
+    # Порівняння нових і старих даних по рахунках
     if not new_data or 'accounts' not in new_data or not isinstance(new_data['accounts'], list):
         try:
             with open(backup_filename, 'r', encoding='utf-8') as f:
@@ -70,7 +69,6 @@ def get_accounts_info(new_data, old_data):
         acc_id = acc.get('id')
         new_balance = acc.get('balance', 0)
         old_balance = next((a.get('balance', 0) for a in old_data.get('accounts', []) if a.get('id') == acc_id), new_balance)
-        # Если старых данных нет, считаем что баланс не изменился
         diff = (new_balance - old_balance) / 100
         masked_pan = acc.get('maskedPan', ['----'])
         last4 = masked_pan[0][-4:] if masked_pan else '----'
@@ -87,6 +85,7 @@ def get_accounts_info(new_data, old_data):
     return accounts_info
 
 def format_accounts(accounts_info):
+    # Формування тексту по рахунках для повідомлення
     lines = []
     for acc in accounts_info:
         old_b = acc['old_balance'] / 100
@@ -94,7 +93,7 @@ def format_accounts(accounts_info):
         diff = acc['diff']
         last4 = acc['last4']
         currency = acc['currency']
-        # Если старый баланс равен новому, не выводим стрелку и изменение
+        # Якщо старий баланс равен новому, не выводим стрелку и изменение
         if old_b != new_b:
             lines.append(f"Карта *{last4} ({currency}): {old_b:.2f} → {new_b:.2f} (изменение: {diff:+.2f} {currency})")
         else:
@@ -102,6 +101,7 @@ def format_accounts(accounts_info):
     return "\n".join(lines)
 
 def format_rates(usd_uah, eur_uah):
+    # Формування тексту по курсам валют
     lines = []
     if usd_uah:
         lines.append(f"\nUSD/UAH: цена за покупку: {usd_uah.get('rateBuy', 'N/A')} | цена на продажу: {usd_uah.get('rateSell', 'N/A')}")
@@ -113,12 +113,13 @@ def format_rates(usd_uah, eur_uah):
         lines.append("EUR/UAH: нет данных")
     return "\n".join(lines)
 
-# --- Aiogram Bot ---
+# --- Ініціалізація бота ---
 bot = Bot(token=telegram_token)
 dp = Dispatcher()
 chat_ids = set()
 
 def save_user(user_id, username=None, first_name=None, last_name=None):
+    # Збереження або оновлення інформації про користувача
     try:
         with open(users_filename, 'r', encoding='utf-8') as f:
             users = json.load(f)
@@ -129,7 +130,7 @@ def save_user(user_id, username=None, first_name=None, last_name=None):
     exists = False
     for user in users:
         if isinstance(user, int):
-            # Старый формат, преобразуем в dict
+            # Старий формат, преобразуем в dict
             if user == user_id:
                 exists = True
                 new_users.append({
@@ -158,6 +159,7 @@ def save_user(user_id, username=None, first_name=None, last_name=None):
         json.dump(new_users, f, indent=4, ensure_ascii=False)
 
 def is_banned(user_id):
+    # Перевірка, чи користувач забанений
     try:
         with open(banned_filename, 'r', encoding='utf-8') as f:
             banned = set(json.load(f))
@@ -166,6 +168,7 @@ def is_banned(user_id):
     return user_id in banned
 
 def ban_user(user_id):
+    # Додає користувача до списку забанених
     try:
         with open(banned_filename, 'r', encoding='utf-8') as f:
             banned = set(json.load(f))
@@ -176,6 +179,7 @@ def ban_user(user_id):
         json.dump(list(banned), f, indent=4, ensure_ascii=False)
 
 def unban_user(user_id):
+    # Видаляє користувача зі списку забанених
     try:
         with open(banned_filename, 'r', encoding='utf-8') as f:
             banned = set(json.load(f))
@@ -187,6 +191,7 @@ def unban_user(user_id):
 
 @dp.message(Command("start"))
 async def cmd_start(message: Message):
+    # Обробка команди /start
     log_event(f"/start from {message.chat.id}")
     if is_banned(message.chat.id):
         await message.answer("Вам заборонено користуватись ботом.")
@@ -202,6 +207,7 @@ async def cmd_start(message: Message):
 
 @dp.message(Command("status"))
 async def cmd_status(message: Message):
+    # Обробка команди /status (показ балансу та курсів)
     log_event(f"/status from {message.chat.id}")
     if is_banned(message.chat.id):
         await message.answer("Вам заборонено користуватись ботом.")
@@ -241,6 +247,7 @@ async def cmd_status(message: Message):
 
 @dp.message(Command("users"))
 async def cmd_users(message: Message):
+    # Обробка команди /users (список користувачів)
     log_event(f"/users from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас нет доступа к этому списку.")
@@ -264,6 +271,7 @@ async def cmd_users(message: Message):
 
 @dp.message(Command("broadcast"))
 async def cmd_broadcast(message: Message):
+    # Обробка команди /broadcast (розсилка)
     log_event(f"/broadcast from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас нет доступа к этой команде.")
@@ -290,6 +298,7 @@ async def cmd_broadcast(message: Message):
 
 @dp.message(Command("ban"))
 async def cmd_ban(message: Message):
+    # Обробка команди /ban (бан користувача)
     log_event(f"/ban from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас нет доступа к этой команде.")
@@ -307,6 +316,7 @@ async def cmd_ban(message: Message):
 
 @dp.message(Command("unban"))
 async def cmd_unban(message: Message):
+    # Обробка команди /unban (розбан користувача)
     log_event(f"/unban from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас нет доступа к этой команде.")
@@ -322,10 +332,10 @@ async def cmd_unban(message: Message):
     except Exception:
         await message.answer("Не вдалося розблокувати користувача.")
 
-# --- New admin commands ---
-
+# --- Адмінські команди ---
 @dp.message(Command("stats"))
 async def cmd_stats(message: Message):
+    # Обробка команди /stats (статистика)
     log_event(f"/stats from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас немає доступу до цієї команди.")
@@ -361,6 +371,7 @@ async def cmd_stats(message: Message):
 
 @dp.message(Command("logs"))
 async def cmd_logs(message: Message):
+    # Обробка команди /logs (останні логи)
     log_event(f"/logs from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас немає доступу до цієї команди.")
@@ -381,6 +392,7 @@ async def cmd_logs(message: Message):
 
 @dp.message(Command("testmsg"))
 async def cmd_testmsg(message: Message):
+    # Обробка команди /testmsg (тестове повідомлення користувачу)
     log_event(f"/testmsg from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас немає доступу до цієї команди.")
@@ -399,11 +411,13 @@ async def cmd_testmsg(message: Message):
 
 @dp.message(Command("ping"))
 async def cmd_ping(message: Message):
+    # Обробка команди /ping (перевірка зв'язку)
     log_event(f"/ping from {message.chat.id}")
     await message.answer("Я на зв'язку!")
 
 @dp.message(Command("helpadmin"))
 async def cmd_helpadmin(message: Message):
+    # Обробка команди /helpadmin (довідка по адмін-командам)
     log_event(f"/helpadmin from {message.chat.id}")
     if message.from_user.id != OWNER_ID:
         await message.answer("У вас немає доступу до цієї команди.")
@@ -422,16 +436,24 @@ async def cmd_helpadmin(message: Message):
     )
     await message.answer(help_text, parse_mode="HTML")
 
-# --- Error logging for all handlers ---
+# --- Глобальний обробник помилок ---
 from aiogram import F
 @dp.errors()
 async def error_handler(update, exception):
+    # Логування помилок
     log_event(f"Error: {exception}")
     return True
 
 async def periodic_update():
-    prev_balances = None
-    prev_rates = None
+    # Періодичне оновлення балансу та курсів, розсилка тільки при зміні
+    old_data = get_old_data()
+    new_data = get("https://api.monobank.ua/personal/client-info", headers={'X-Token': api_token}).json()
+    save_new_data(new_data)
+    currency_data, usd_uah, eur_uah = get_currency_rates()
+    accounts_info = get_accounts_info(new_data, old_data)
+    prev_balances = balances_snapshot(accounts_info)
+    prev_rates = rates_snapshot(usd_uah, eur_uah)
+
     while True:
         old_data = get_old_data()
         new_data = get("https://api.monobank.ua/personal/client-info", headers={'X-Token': api_token}).json()
@@ -465,6 +487,7 @@ async def periodic_update():
         await asyncio.sleep(61)
 
 def get_old_data():
+    # Отримання старих даних з файлу
     try:
         with open(filename, 'r', encoding='utf-8') as f:
             old_data = json.load(f)
@@ -475,13 +498,16 @@ def get_old_data():
     return old_data
 
 def save_new_data(new_data):
+    # Збереження нових даних у файл
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(new_data, f, indent=4, ensure_ascii=False)
 
 def balances_snapshot(accounts_info):
+    # Знімок балансів для порівняння
     return [(acc['id'], acc['new_balance']) for acc in accounts_info]
 
 def rates_snapshot(usd_uah, eur_uah):
+    # Знімок курсів для порівняння
     return (
         usd_uah.get('rateBuy', None) if usd_uah else None,
         usd_uah.get('rateSell', None) if usd_uah else None,
@@ -490,11 +516,12 @@ def rates_snapshot(usd_uah, eur_uah):
     )
 
 async def main():
-    # Запуск бота и периодической задачи
+    # Запуск бота і періодичної задачі
     asyncio.create_task(periodic_update())
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
+    # Точка входу, автозапуск для Windows
     import sys
     import os
     if sys.platform.startswith('win') and sys.version_info >= (3, 8):
@@ -517,11 +544,11 @@ if __name__ == "__main__":
             shortcut.IconLocation = sys.executable
             shortcut.save()
     except Exception:
-        pass  # Не критично, если не удалось создать ярлык
+        pass  # Не критично, якщо не вдалося створити ярлик
 
     asyncio.run(main())
 
-# --- Адмінські команди ---
+# --- Адмінські команди (довідка) ---
 # /users - список усіх користувачів бота
 # /broadcast <текст> - розсилка повідомлення всім користувачам
 # /ban <user_id> - заблокувати користувача
