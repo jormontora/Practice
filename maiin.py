@@ -23,7 +23,7 @@ currency_map = {
     978: 'EUR'
 }
 
-OWNER_ID = 752113604  # <-- ваш Telegram user_id
+OWNER_ID = 752113604  
 
 # --- Налаштування логування ---
 LOG_FILENAME = 'bot.log'
@@ -378,12 +378,24 @@ async def cmd_logs(message: Message):
         await message.answer("У вас немає доступу до цієї команди.")
         return
     try:
-        N = 30  # lines to show
+        N = 100  # lines to read for filtering
         with open(LOG_FILENAME, 'r', encoding='utf-8') as f:
             lines = f.readlines()[-N:]
-        text = ''.join(lines)
-        if not text:
-            text = "Логи порожні."
+        # Фильтруем строки, убирая технические сообщения
+        filtered_lines = [
+            line for line in lines
+            if not any(
+                kw in line.lower()
+                for kw in [
+                    "обработан", "request time", "elapsed", "processing time", "response time"
+                ]
+            )
+        ]
+        # Оставляем только последние 30 полезных строк
+        filtered_lines = filtered_lines[-30:]
+        text = ''.join(filtered_lines)
+        if not text.strip():
+            text = "Логи порожні або немає корисної інформації."
         # Telegram message limit: 4096 chars
         if len(text) > 4000:
             text = text[-4000:]
