@@ -23,7 +23,7 @@ currency_map = {
     978: 'EUR'
 }
 
-OWNER_ID = 752113604  # <-- ваш Telegram user_id
+OWNER_ID = 752113604  
 
 # --- Налаштування логування ---
 LOG_FILENAME = 'bot.log'
