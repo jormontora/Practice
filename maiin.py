@@ -29,7 +29,7 @@ OWNER_ID = 752113604
 LOG_FILENAME = 'bot.log'
 logging.basicConfig(
     filename=LOG_FILENAME,
-    level=logging.INFO,
+    level=logging.ERROR,
     format='%(asctime)s %(levelname)s %(message)s',
     encoding='utf-8'
 )
